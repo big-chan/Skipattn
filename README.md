@@ -39,3 +39,8 @@ python3 scripts/train.py configs/train_kitti.yaml
 ## Eval
 
 - [pretrain weight](https://drive.google.com/file/d/1LBz4vQLkLWGVGc1jQSa7Te4xAI3pko6S/view?usp=sharing)
+    - eval_kitti.yaml 데이터 경로변경 
+    
+```
+python3 scripts/eval.py --config configs/eval_kitti.yaml --checkpoint ./Attn_et.ckpt
+```
