@@ -11,16 +11,18 @@ make docker-build
 ```
 make docker-start-interactive
 ```
+- cuda 버전이 11일 경우 [참조](https://github.com/pytorch/pytorch/issues/31285#issuecomment-787582949)
+```
+pip3 install --pre torch torchvision -f https://download.pytorch.org/whl/nightly/cu111/torch_nightly.html -U
+```
+- horovod 가 없을 경우
+```
+pip install horovod 
+```
 - wandb 가 안될 경우
 ```
 pip install wandb --upgrade 
 ```
-- cuda 버전이 11일 경우 [참조](https://github.com/pytorch/pytorch/issues/31285#issuecomment-787582949)
-
-```
-pip3 install --pre torch torchvision -f https://download.pytorch.org/whl/nightly/cu111/torch_nightly.html -U
-```
-
 ## training
 
 - train_kitti.yaml 파일을 변경해서 데이터 경로 변경 ! 
