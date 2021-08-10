@@ -30,7 +30,7 @@ def SSIM(x, y, C1=1e-4, C2=9e-4, kernel_size=3, stride=1):
         SSIM distance
     """
     pool2d = nn.AvgPool2d(kernel_size, stride=stride)
-    refl = nn.ReflectionPad2d(int(kernel_size/2))
+    refl = nn.ReflectionPad2d(1)
 
     x, y = refl(x), refl(y)
     mu_x = pool2d(x)
@@ -52,46 +52,6 @@ def SSIM(x, y, C1=1e-4, C2=9e-4, kernel_size=3, stride=1):
 
     return ssim
 
-def SSIM_v2(x, y, C1=1e-4, C2=9e-4, kernel_size=3, stride=1):
-    """
-    Structural SIMilarity (SSIM) distance between two images.
-
-    Parameters
-    ----------
-    x,y : torch.Tensor [B,3,H,W]
-        Input images
-    C1,C2 : float
-        SSIM parameters
-    kernel_size,stride : int
-        Convolutional parameters
-
-    Returns
-    -------
-    ssim : torch.Tensor [1]
-        SSIM distance
-    """
-    pool2d = nn.AvgPool2d(kernel_size, stride=stride)
-    refl = nn.ReflectionPad2d(int(kernel_size/2))
-
-    x, y = refl(x), refl(y)
-    mu_x = pool2d(x)
-    mu_y = pool2d(y)
-
-    mu_x_mu_y = mu_x * mu_y
-    mu_x_sq = mu_x.pow(2)
-    mu_y_sq = mu_y.pow(2)
-
-    sigma_x = pool2d(x.pow(2)) - mu_x_sq
-    sigma_y = pool2d(y.pow(2)) - mu_y_sq
-    sigma_xy = pool2d(x * y) - mu_x_mu_y
-    v1 = 2 * sigma_xy + C2
-    v2 = sigma_x + sigma_y + C2
-
-    ssim_n = (2 * mu_x_mu_y + C1) * v1
-    ssim_d = (mu_x_sq + mu_y_sq + C1) * v2
-    ssim = ssim_n / ssim_d
-
-    return ssim
 ########################################################################################################################
 
 class MultiViewPhotometricLoss(LossBase):
@@ -222,14 +182,7 @@ class MultiViewPhotometricLoss(LossBase):
         ssim : torch.Tensor [1]
             SSIM loss
         """
-        kernel_sizes=[3,5,7]
-        # for i in kernel_sizes:
-
         ssim_value = SSIM(x, y, C1=self.C1, C2=self.C2, kernel_size=kernel_size)
-        # ssim_value_5 = SSIM(x, y, C1=self.C1, C2=self.C2, kernel_size=5)
-        # ssim_value_7 = SSIM(x, y, C1=self.C1, C2=self.C2, kernel_size=7)
-        #     # import pdb;pdb.set_trace()
-        # ssim_value= ssim_value_3*0.3+ssim_value_5*0.3+ssim_value_7*0.3
         return torch.clamp((1. - ssim_value) / 2., 0., 1.)
 
     def calc_photometric_loss(self, t_est, images):

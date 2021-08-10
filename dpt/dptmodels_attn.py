@@ -93,7 +93,6 @@ class DPT(BaseModel):
             nn.Conv2d(features, features // 2, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(features // 2, 32, kernel_size=3, stride=1, padding=1),
         )
-
         self.scratch.output_conv = head
     def normalinput(self, x):
         mean=torch.tensor((123.675/255., 116.28/255., 103.53/255.)).cuda()
@@ -105,7 +104,11 @@ class DPT(BaseModel):
         
         return x
     def forward(self, x):
-
+#         if self.channels_last == True:
+#             x.contiguous(memory_format=torch.channels_last)
+        # import pdb;pdb.set_trace()
+        # x = (x - 0.45) / 0.225
+        # x=self.normalinput(x)
         layer_1, layer_2, layer_3, layer_4 = self.Swin( x)
 
         layer_1_rn = self.scratch.layer1_rn(layer_1)

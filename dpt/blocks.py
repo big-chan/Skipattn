@@ -272,8 +272,7 @@ class SoftAttn(nn.Module):
         grid = grid.repeat(batch_size, 1, height, width).float()
 
         z = F.softmax(input_t, dim=self.dim)
-        z = z *(grid.to(z.device))*input_t
-        # import pdb;pdb.set_trace()
+        z = z * (grid.to(z.device))
         #z = torch.sum(z, dim=1, keepdim=True)
 
         return z
@@ -438,10 +437,10 @@ class FeatureFusionBlock_custom(nn.Module):
         if len(xs) == 2:
             res = self.resConfUnit1(xs[1])
             # import pdb;pdb.set_trace()
-            # output=output*self.attn_layer(res)
-            output=res*self.attn_layer(output)
+            output=output*self.attn_layer(res)
+            # output=res*self.attn_layer(output)
             
-            # output = self.skip_add.add(output, res)
+            #output = self.skip_add.add(output, res)
             # output += res
 
         output = self.resConfUnit2(output)

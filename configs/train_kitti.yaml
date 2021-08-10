@@ -1,13 +1,12 @@
 wandb:
     dry_run: False                        # Wandb dry-run (not logging)
-    name: 'V100_Swin_lr2_attn_MS_dt_self'                                      # Wandb run name
+    name: 'V100_Swin_lr2_attn_MS_et_v2'                                      # Wandb run name
     project: "Swin"  # Wandb project
     entity: "bigchan"    # Wandb entity
     tags: []                                      # Wandb tags
     dir: './' 
 model:
-    name: 'SelfSupModel'
-    #checkpoint_path: "checkpoint/V100_Swin_lr2_attn_MS_dt_v2/epoch=11_KITTI_raw-eigen_test_files-velodyne-loss=0.000.ckpt"
+    name: 'VelSupModel'
     optimizer:
         name: 'AdamW'
         depth:
@@ -16,7 +15,7 @@ model:
             lr: 0.0002
     scheduler:
         name: 'StepLR'
-        step_size: 15
+        step_size: 30
         gamma: 0.5
     depth_net:
         name: 'DPT'

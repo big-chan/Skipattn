@@ -86,7 +86,6 @@ class SelfSupModel(SfmModel):
             return output
         else:
             # Otherwise, calculate self-supervised loss
-            # import pdb;pdb.set_trace()
             self_sup_output = self.self_supervised_loss(
                 batch['rgb_original'], batch['rgb_context_original'],
                 output['inv_depths'], output['poses'], batch['intrinsics'],
