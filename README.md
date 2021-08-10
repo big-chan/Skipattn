@@ -23,10 +23,11 @@ pip install horovod
 ```
 pip install wandb --upgrade 
 ```
-- Swin pretrain model download[참조](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation)
+- Swin pretrain model download [참조](https://github.com/SwinTransformer/Swin-Transformer-Semantic-Segmentation)
 ```
 wget https://github.com/SwinTransformer/storage/releases/download/v1.0.1/upernet_swin_base_patch4_window7_512x512.pth
 ```
+
 ## training
 
 - train_kitti.yaml 파일을 변경해서 데이터 경로 변경 ! 
@@ -35,3 +36,6 @@ wget https://github.com/SwinTransformer/storage/releases/download/v1.0.1/upernet
 python3 scripts/train.py configs/train_kitti.yaml
 ```
 
+## Eval
+
+- [pretrain weight](https://drive.google.com/file/d/1LBz4vQLkLWGVGc1jQSa7Te4xAI3pko6S/view?usp=sharing)
