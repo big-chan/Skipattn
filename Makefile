@@ -1,8 +1,8 @@
 # Handy commands:
 # - `make docker-build`: builds DOCKERIMAGE (default: `packnet-sfm:latest`)
-PROJECT ?= packnet-sfm
+PROJECT ?= packnet-sfm_dc
 WORKSPACE ?= /workspace/$(PROJECT)
-DOCKER_IMAGE ?= ${PROJECT}:latest
+DOCKER_IMAGE ?= packnet-sfm:latest
 
 SHMSIZE ?= 444G
 WANDB_MODE ?= run
