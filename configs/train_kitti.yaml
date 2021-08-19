@@ -1,6 +1,6 @@
 wandb:
     dry_run: False                        # Wandb dry-run (not logging)
-    name: 'V100_Swin_lr2_attn_MS_et_v2_notgrid'                                      # Wandb run name
+    name: 'V100_Swin_lr2_attn_MS_et_v2'                                      # Wandb run name
     project: "Swin"  # Wandb project
     entity: "bigchan"    # Wandb entity
     tags: []                                      # Wandb tags
