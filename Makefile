@@ -1,13 +1,14 @@
 # Handy commands:
 # - `make docker-build`: builds DOCKERIMAGE (default: `packnet-sfm:latest`)
-PROJECT ?= packnet-sfm_dc
+PROJECT ?= skipattn
 WORKSPACE ?= /workspace/$(PROJECT)
-DOCKER_IMAGE ?= packnet-sfm:latest
+DOCKER_IMAGE ?= skipattn:latest
 
 SHMSIZE ?= 444G
 WANDB_MODE ?= run
 DOCKER_OPTS := \
 			--name ${PROJECT} \
+			-e "TERM=xterm-256color" \
 			-v /raid:/raid \
 			-v /data:/data \
 			-p 8801:8888 \
@@ -69,8 +70,8 @@ docker-build:
 		-f docker/Dockerfile \
 		-t ${DOCKER_IMAGE} .
 
-docker-start-interactive: docker-build
-	nvidia-docker run ${DOCKER_OPTS} ${DOCKER_IMAGE} bash
+docker-start-interactive: #docker-build
+	nvidia-docker run -it ${DOCKER_OPTS} ${DOCKER_IMAGE} /bin/bash
 
 docker-start-jupyter: docker-build
 	nvidia-docker run ${DOCKER_OPTS} ${DOCKER_IMAGE} \
