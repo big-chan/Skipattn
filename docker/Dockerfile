@@ -125,7 +125,7 @@ ENTRYPOINT ["/tini", "-g", "--"]
 # WORKDIR /workspace
 COPY requirements.txt /workspace/requirements.txt
 
-RUN pip3 install -r /requirements.txt
+RUN pip3 install -r requirements.txt
 
 # ENV PYTHONPATH="/workspace/dgp:$PYTHONPATH"
 
