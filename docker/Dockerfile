@@ -122,7 +122,7 @@ RUN chmod +x /tini
 ENTRYPOINT ["/tini", "-g", "--"]
 
 # Install DGP (dataset utils)
-# WORKDIR /workspace
+WORKDIR /workspace
 COPY requirements.txt /workspace/requirements.txt
 
 RUN pip3 install -r requirements.txt
