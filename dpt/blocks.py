@@ -272,7 +272,7 @@ class SoftAttn(nn.Module):
         grid = grid.repeat(batch_size, 1, height, width).float()
 
         z = F.softmax(input_t, dim=self.dim)
-        z = z #* (grid.to(z.device))
+        z = z * (grid.to(z.device))
         #z = torch.sum(z, dim=1, keepdim=True)
 
         return z
