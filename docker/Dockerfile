@@ -2,7 +2,7 @@
 
 FROM nvidia/cuda:10.1-devel-ubuntu18.04
 
-ENV PROJECT=skipattn
+ENV PROJECT=packnet-sfm
 ENV PYTORCH_VERSION=1.7.1+cu101
 ENV TORCHVISION_VERSION=0.8.2+cu101
 ENV CUDNN_VERSION=7.6.5.32-1+cuda10.1
@@ -127,12 +127,11 @@ COPY requirements.txt /workspace/requirements.txt
 
 RUN pip3 install -r requirements.txt
 
-# ENV PYTHONPATH="/workspace/dgp:$PYTHONPATH"
+ENV PYTHONPATH="/workspace/dgp:$PYTHONPATH"
 
 # Override DGP wandb with required version
-RUN pip install wandb
-RUN pip install horovod
-# RUN pip install inplace-abn
+RUN pip install wandb==0.8.21
+
 # Expose Port for jupyter (8888)
 EXPOSE 8888
 
@@ -143,5 +142,5 @@ WORKDIR /workspace/${PROJECT}
 
 # Copy project source last (to avoid cache busting)
 WORKDIR /workspace/${PROJECT}
-# COPY . /workspace/${PROJECT}
+COPY . /workspace/${PROJECT}
 ENV PYTHONPATH="/workspace/${PROJECT}:$PYTHONPATH"
