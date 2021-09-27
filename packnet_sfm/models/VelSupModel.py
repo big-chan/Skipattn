@@ -25,7 +25,7 @@ class VelSupModel(SelfSupModel):
         # GT pose is required
         self._train_requirements['gt_pose'] = True
 
-    def forward(self, batch, return_logs=False, progress=0.0):
+    def forward(self, batch, return_logs=False, progress=0.0,epoch=0):
         """
         Processes a batch.
 
@@ -44,7 +44,7 @@ class VelSupModel(SelfSupModel):
             Dictionary containing a "loss" scalar and different metrics and predictions
             for logging and downstream usage.
         """
-        output = super().forward(batch, return_logs, progress)
+        output = super().forward(batch, return_logs, progress, epoch)
         if self.training:
             # Update self-supervised loss with velocity supervision
             velocity_loss = self._velocity_loss(output['poses'], batch['pose_context'])

@@ -36,6 +36,7 @@ class SfmModel(BaseModel):
         self.rotation_mode = rotation_mode
         self.flip_lr_prob = flip_lr_prob
         self.upsample_depth_maps = upsample_depth_maps
+        # self.upsample_depth_maps = False
 
         self._network_requirements = [
             'depth_net',
@@ -86,6 +87,7 @@ class SfmModel(BaseModel):
         flag_flip_lr = random.random() < self.flip_lr_prob if self.training else force_flip
         output = self.depth_net_flipping(batch, flag_flip_lr)
         # If upsampling depth maps at training time
+        
         if self.training and self.upsample_depth_maps:
             output = upsample_output(output, mode='nearest', align_corners=None)
         # Return inverse depth maps

@@ -1,8 +1,8 @@
 wandb:
-    dry_run: False                        # Wandb dry-run (not logging)
-    name: 'V100_Swin_lr2_attn_MS_et_v2_notgrid'                                      # Wandb run name
-    project: "Swin"  # Wandb project
-    entity: "bigchan"    # Wandb entity
+    dry_run: True                        # Wandb dry-run (not logging)
+    name: 'Swin-B_splitlr_ss_supervised_vdebug'                                      # Wandb run name
+    project: "Swin_ablation"  # Wandb project
+    entity: "jmshin"    # Wandb entity
     tags: []                                      # Wandb tags
     dir: './' 
 model:
@@ -10,9 +10,11 @@ model:
     optimizer:
         name: 'AdamW'
         depth:
-            lr: 0.00006
+            lr: 1e-5
+            # weight_decay: 0.01
         pose:
-            lr: 0.0002
+            lr: 0.0001
+            weight_decay: 0.002
     scheduler:
         name: 'StepLR'
         step_size: 30
@@ -29,7 +31,7 @@ model:
         max_depth: 80.0
     loss:
         supervised_method : 'sparse-berhu'
-        num_scales: 4
+        num_scales: 1
         supervised_num_scales : 1
 datasets:
     augmentation:
@@ -37,17 +39,72 @@ datasets:
     train:
         batch_size: 4
         dataset: ['KITTI']
-        path: ['/raid/datasets/KITTI_raw']
+        path: ['/data/datasets/KITTI_raw']
         split: ['data_splits/eigen_zhou_files.txt']
         depth_type: ['velodyne']
-        repeat: [2]
+        repeat: [1]
     validation:
         dataset: ['KITTI']
-        path: ['/raid/datasets/KITTI_raw']
+        path: ['/data/datasets/KITTI_raw']
         split: ['data_splits/eigen_test_files.txt']
         depth_type: ['velodyne']
     test:
         dataset: ['KITTI']
-        path: ['/raid/datasets/KITTI_raw']
+        path: ['/data/datasets/KITTI_raw']
         split: ['data_splits/eigen_test_files.txt']
         depth_type: ['velodyne']
+
+# # ##########################original setting########################
+# wandb:
+#     dry_run: False                        # Wandb dry-run (not logging)
+#     name: 'swin_skipadd_v1.4'                                      # Wandb run name
+#     project: "Swin_ablation"  # Wandb project
+#     entity: "jmshin"    # Wandb entity
+#     tags: []                                      # Wandb tags
+#     dir: './' 
+# model:
+#     name: 'VelSupModel'
+#     optimizer:
+#         name: 'AdamW'
+#         depth:
+#             lr: 0.00006
+#         pose:
+#             lr: 0.0002
+#     scheduler:
+#         name: 'StepLR'
+#         step_size: 20
+#         gamma: 0.5
+#     depth_net:
+#         name: 'DPT'
+#         version: '1A'
+#     pose_net:
+#         name: 'PoseNet'
+#         version: ''
+#     params:
+#         crop: 'garg'
+#         min_depth: 0.0
+#         max_depth: 80.0
+#     loss:
+#         supervised_method : 'sparse-berhu'
+#         num_scales: 4
+#         supervised_num_scales : 1
+# datasets:
+#     augmentation:
+#         image_shape: (192, 640)
+#     train:
+#         batch_size: 4
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_zhou_files.txt']
+#         depth_type: ['velodyne']
+#         repeat: [1]
+#     validation:
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_test_files.txt']
+#         depth_type: ['velodyne']
+#     test:
+#         dataset: ['KITTI']
+#         path: ['/data/datasets/KITTI_raw']
+#         split: ['data_splits/eigen_test_files.txt']
+#         depth_type: ['velodyne']

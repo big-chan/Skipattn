@@ -58,7 +58,15 @@ class HorovodTrainer(BaseTrainer):
             self.check_and_save(module, validation_output)
 
         # Epoch loop
+        # optimizer.param_groups[0]['lr']=1e-5
+        # optimizer.param_groups[1]['lr']=1e-5
         for epoch in range(module.current_epoch, self.max_epochs):
+            old_lr = optimizer.param_groups[0]['lr']
+            # if epoch >=3:
+                # scheduler.step(epoch)
+            scheduler.step(epoch)
+            lr = optimizer.param_groups[0]['lr']
+            print('learning rate %.7f -> %.7f' % (old_lr, lr))
             # Train
             self.train(train_dataloader, module, optimizer)
             # Validation
@@ -68,7 +76,7 @@ class HorovodTrainer(BaseTrainer):
             # Update current epoch
             module.current_epoch += 1
             # Take a scheduler step
-            scheduler.step()
+            
 
     def train(self, dataloader, module, optimizer):
         # Set module to train
@@ -89,6 +97,7 @@ class HorovodTrainer(BaseTrainer):
             batch = sample_to_cuda(batch)
             batch["id"]=i
             output = module.training_step(batch, i)
+            
             # Backprop through loss and take an optimizer step
             output['loss'].backward()
             optimizer.step()

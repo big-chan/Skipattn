@@ -30,7 +30,7 @@ class SelfSupModel(SfmModel):
         }
 
     def self_supervised_loss(self, image, ref_images, inv_depths, poses,
-                             intrinsics, return_logs=False, progress=0.0):
+                             intrinsics, return_logs=False, progress=0.0,epoch=0):
         """
         Calculates the self-supervised photometric loss.
 
@@ -58,9 +58,9 @@ class SelfSupModel(SfmModel):
         """
         return self._photometric_loss(
             image, ref_images, inv_depths, intrinsics, intrinsics, poses,
-            return_logs=return_logs, progress=progress)
+            return_logs=return_logs, progress=progress, epoch=epoch)
 
-    def forward(self, batch, return_logs=False, progress=0.0):
+    def forward(self, batch, return_logs=False, progress=0.0, epoch=0):
         """
         Processes a batch.
 
@@ -86,10 +86,11 @@ class SelfSupModel(SfmModel):
             return output
         else:
             # Otherwise, calculate self-supervised loss
+
             self_sup_output = self.self_supervised_loss(
                 batch['rgb_original'], batch['rgb_context_original'],
                 output['inv_depths'], output['poses'], batch['intrinsics'],
-                return_logs=return_logs, progress=progress)
+                return_logs=return_logs, progress=progress, epoch=epoch)
             # Return loss and metrics
             return {
                 'loss': self_sup_output['loss'],

@@ -135,12 +135,23 @@ class ModelWrapper(torch.nn.Module):
         # Load optimizer
         optimizer = getattr(torch.optim, self.config.model.optimizer.name)
         # Depth optimizer
-        if self.depth_net is not None:
-            params.append({
-                'name': 'Depth',
-                'params': self.depth_net.parameters(),
+        # if self.depth_net is not None:
+        #     params.append({
+        #         'name': 'Depth',
+        #         'params': self.depth_net.parameters(),
+        #         **filter_args(optimizer, self.config.model.optimizer.depth)
+        #     })
+        params.append({
+                'name': 'swin',
+                'params': self.depth_net.Swin.parameters(),
                 **filter_args(optimizer, self.config.model.optimizer.depth)
             })
+        params.append({
+            'name' : 'dpt',
+            'params' : self.depth_net.scratch.parameters(),
+            **filter_args(optimizer, {'lr':6e-5, 'weight_decay':0.002})
+        })
+        # {'lr':6e-5, 'weight_decay':0.002}
         # Pose optimizer
         if self.pose_net is not None:
             params.append({
@@ -152,6 +163,11 @@ class ModelWrapper(torch.nn.Module):
         optimizer = optimizer(params)
 
         # Load and initialize scheduler
+
+        # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=1e-4, 
+        #                                                 steps_per_epoch=1, epochs=50,
+        #                                                 anneal_strategy='linear',
+        #                                                 pct_start=0.15)
         scheduler = getattr(torch.optim.lr_scheduler, self.config.model.scheduler.name)
         scheduler = scheduler(optimizer, **filter_args(scheduler, self.config.model.scheduler))
 
@@ -186,7 +202,8 @@ class ModelWrapper(torch.nn.Module):
     def training_step(self, batch, *args):
         """Processes a training batch."""
         batch = stack_batch(batch)
-        output = self.model(batch, progress=self.progress)
+        output = self.model(batch, progress=self.progress, epoch=self.current_epoch)
+
         if self.logger:
             if batch["id"]%1000==0:
                 self.logger.log_depth_train( output)
@@ -379,6 +396,7 @@ class ModelWrapper(torch.nn.Module):
 
 def set_random_seed(seed):
     if seed >= 0:
+        print("Set random seed@@@@@@@@@@@@@@@@@@@@")
         np.random.seed(seed)
         random.seed(seed)
         torch.manual_seed(seed)

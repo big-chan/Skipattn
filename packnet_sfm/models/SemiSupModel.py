@@ -45,7 +45,7 @@ class SemiSupModel(SelfSupModel):
         }
 
     def supervised_loss(self, inv_depths, gt_inv_depths,
-                        return_logs=False, progress=0.0):
+                        return_logs=False, progress=0.0, epoch=0):
         """
         Calculates the supervised loss.
 
@@ -67,7 +67,7 @@ class SemiSupModel(SelfSupModel):
         """
         return self._supervised_loss(
             inv_depths, gt_inv_depths,
-            return_logs=return_logs, progress=progress)
+            return_logs=return_logs, progress=progress, epoch=epoch)
 
     def forward(self, batch, return_logs=False, progress=0.0):
         """

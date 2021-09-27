@@ -2,7 +2,7 @@
 
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 from packnet_sfm.utils.image import match_scales
 from packnet_sfm.geometry.camera import Camera
 from packnet_sfm.geometry.camera_utils import view_synthesis
@@ -107,6 +107,7 @@ class MultiViewPhotometricLoss(LossBase):
         self.automask_loss = automask_loss
         self.progressive_scaling = ProgressiveScaling(
             progressive_scaling, self.n)
+        self.automask = None
 
         # Asserts
         if self.automask_loss:
@@ -157,6 +158,7 @@ class MultiViewPhotometricLoss(LossBase):
             ref_cams.append(Camera(K=ref_K.float(), Tcw=pose).scaled(scale_factor).to(device))
         # View synthesis
         depths = [inv2depth(inv_depths[i]) for i in range(self.n)]
+
         ref_images = match_scales(ref_image, inv_depths, self.n)
         ref_warped = [view_synthesis(
             ref_images[i], depths[i], ref_cams[i], cams[i],
@@ -222,6 +224,26 @@ class MultiViewPhotometricLoss(LossBase):
         # Return total photometric loss
         return photometric_loss
 
+    def compute_supervised_loss(self, invdepth):
+
+        final_disp = invdepth[0].detach()
+        supervised_loss = 0
+        
+        for i in range(1, len(invdepth)):
+            target_res = invdepth[i].shape[-2:]        
+            up2down_disp = F.interpolate(final_disp, target_res, mode="area", align_corners=None)
+            automask = F.interpolate(self.automask, target_res, mode="nearest")
+            # 
+            disp_diff = invdepth[i] - up2down_disp
+            try:
+                supervised_loss += (torch.abs(disp_diff) * automask).mean() / (len(invdepth)-1)
+            except:
+                import pdb;pdb.set_trace()
+        self.automask = None
+        self.add_metric('upflow_loss', supervised_loss)
+
+        return supervised_loss
+
     def reduce_photometric_loss(self, photometric_losses):
         """
         Combine the photometric loss from all context images
@@ -241,16 +263,29 @@ class MultiViewPhotometricLoss(LossBase):
             if self.photometric_reduce_op == 'mean':
                 return sum([l.mean() for l in losses]) / len(losses)
             elif self.photometric_reduce_op == 'min':
-                return torch.cat(losses, 1).min(1, True)[0].mean()
+                loss, idxs = torch.cat(losses, 1).min(1, True)
+                # mask = (idxs < 2).float()
+                mask = (~((idxs%2).bool())).float()
+                return loss, mask
             else:
                 raise NotImplementedError(
                     'Unknown photometric_reduce_op: {}'.format(self.photometric_reduce_op))
         # Reduce photometric loss
-        photometric_loss = sum([reduce_function(photometric_losses[i])
-                                for i in range(self.n)]) / self.n
+        ph_losses = 0
+        
+        for i in range(self.n):
+            ph_loss, mask = reduce_function(photometric_losses[i])
+            if self.automask is None:
+                self.automask = mask
+            # ph_losses+= (ph_loss*automask).mean() / self.n
+            ph_losses += ph_loss.mean() / self.n
+        
+        # photometric_loss = sum([reduce_function(photometric_losses[i])[0].mean()
+        #                         for i in range(self.n)]) / self.n
+        
         # Store and return reduced photometric loss
-        self.add_metric('photometric_loss', photometric_loss)
-        return photometric_loss
+        self.add_metric('photometric_loss', ph_losses)
+        return ph_losses
 
 ########################################################################################################################
 
@@ -285,7 +320,7 @@ class MultiViewPhotometricLoss(LossBase):
 ########################################################################################################################
 
     def forward(self, image, context, inv_depths,
-                K, ref_K, poses, return_logs=False, progress=0.0):
+                K, ref_K, poses, return_logs=False, progress=0.0, epoch =0):
         """
         Calculates training photometric loss.
 
@@ -334,9 +369,14 @@ class MultiViewPhotometricLoss(LossBase):
                     photometric_losses[i].append(unwarped_image_loss[i])
         # Calculate reduced photometric loss
         loss = self.reduce_photometric_loss(photometric_losses)
+        
+        # if epoch>=1:
+        loss += self.compute_supervised_loss(inv_depths)# * 10
+        
         # Include smoothness loss if requested
         if self.smooth_loss_weight > 0.0:
             loss += self.calc_smoothness_loss(inv_depths, images)
+
         # Return losses and metrics
         return {
             'loss': loss.unsqueeze(0),

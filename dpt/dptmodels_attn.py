@@ -37,7 +37,7 @@ class DPT(BaseModel):
         use_bn=False,
         enable_attention_hooks=False,
     ):
-
+        non_negative = True
         super(DPT, self).__init__()
 
         self.channels_last = channels_last
@@ -47,10 +47,14 @@ class DPT(BaseModel):
             "vitb16_384": [2, 5, 8, 11],
             "vitl16_384": [5, 11, 17, 23],
         }
+
+        ##############Swin-B#############################
         self.scratch = _make_scratch(
             [128, 256, 512, 1024], 256, groups=1, expand=False
         ) 
+
         # Instantiate backbone and reassemble blocks
+        ##Swin Base
         self.Swin=SwinTransformer(embed_dim=128, \
                                 depths=[2, 2, 18, 2], \
                                 num_heads=[4, 8, 16, 32], \
@@ -59,22 +63,63 @@ class DPT(BaseModel):
                                 drop_path_rate=0.3, \
                                 patch_norm=True, \
                                 use_checkpoint=False)
-        ch=torch.load("upernet_swin_base_patch4_window7_512x512.pth")
-        # import pdb;pdb.set_trace()
-        st=self.Swin.state_dict()
-        st_keys=list(st.keys())
-        keys=ch["state_dict"].keys()
-        ch_keys=[]
-        for i in keys:
-            if "backbone" in i:
-                ch_keys.append(i)
+        # ch=torch.load("pretrained_model/upernet_swin_base_patch4_window7_512x512.pth")#Swin-B pretrained
+        ch=torch.load("pretrained_model/swin_base_patch4_window7_224.pth")
+        # ###########Swin-S#######################
+        # self.scratch = _make_scratch(
+        #     [96, 192, 384, 768], 256, groups=1, expand=False
+        # ) 
+        # ##Swin Small
+        # self.Swin=SwinTransformer(
+        #                         embed_dim=96,
+        #                         depths=[2, 2, 18, 2],
+        #                         num_heads=[3, 6, 12, 24],
+        #                         window_size=7,
+        #                         ape=False,
+        #                         drop_path_rate=0.3,
+        #                         patch_norm=True,
+        #                         use_checkpoint=False
+        #                     )
+        # ch=torch.load("pretrained_model/upernet_swin_small_patch4_window7_512x512.pth")#Swin-S pretrained
 
-        # import pdb;pdb.set_trace()
-        for i in range(len(ch_keys)):
-            st[st_keys[i]]=ch["state_dict"][ch_keys[i]]
+        st=self.Swin.state_dict()
+        st_keys=list(st.keys()) #357
+
+        if 'model' in ch.keys():
+            keys=ch['model'].keys()
+
+            ch_keys=[]
+            for i in st_keys:
+                if i in keys:
+                    ch_keys.append(i) 
+                else:
+                    print(i)
+
+            for i in range(len(ch_keys)):
+                st[st_keys[i]]=ch["model"][ch_keys[i]]
+        elif 'state_dict' in ch.keys():
+            keys=ch["state_dict"].keys()
+
+            ch_keys=[]
+            for i in keys:
+                if "backbone" in i:
+                    ch_keys.append(i)
+                else:
+                    print(i)
+
+            for i in range(len(ch_keys)):
+                st[st_keys[i]]=ch["state_dict"][ch_keys[i]]
+
+        else:
+            print("Can't find Keys")
+        
+        
         print("################### Load State_dict [Swin_transformer] ##############################")
+        import pdb;pdb.set_trace()
         self.Swin.load_state_dict(st)
 
+        self.upsample = Interpolate(scale_factor=2, mode="bilinear", align_corners=True)
+        self.scratch.refinenet0 = _make_fusion_block(features, use_bn)
         self.scratch.refinenet1 = _make_fusion_block(features, use_bn)
         self.scratch.refinenet2 = _make_fusion_block(features, use_bn)
         self.scratch.refinenet3 = _make_fusion_block(features, use_bn)
@@ -84,14 +129,26 @@ class DPT(BaseModel):
         self.scratch.output_conv4 =nn.Sequential(
             nn.Conv2d(features, features // 2, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(features // 2, 32, kernel_size=3, stride=1, padding=1),
+            # nn.ReLU(True),
+            # nn.Conv2d(32, 1, kernel_size=1, stride=1, padding=0),
+            # nn.Sigmoid() if non_negative else nn.Identity(),
+            # nn.Identity(),
         )
         self.scratch.output_conv3 = nn.Sequential(
             nn.Conv2d(features, features // 2, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(features // 2, 32, kernel_size=3, stride=1, padding=1),
+            # nn.ReLU(True),
+            # nn.Conv2d(32, 1, kernel_size=1, stride=1, padding=0),
+            # nn.Sigmoid() if non_negative else nn.Identity(),
+            # nn.Identity(),
         )
         self.scratch.output_conv2 = nn.Sequential(
             nn.Conv2d(features, features // 2, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(features // 2, 32, kernel_size=3, stride=1, padding=1),
+            # nn.ReLU(True),
+            # nn.Conv2d(32, 1, kernel_size=1, stride=1, padding=0),
+            # nn.Sigmoid() if non_negative else nn.Identity(),
+            # nn.Identity(),
         )
         self.scratch.output_conv = head
     def normalinput(self, x):
@@ -109,7 +166,8 @@ class DPT(BaseModel):
         # import pdb;pdb.set_trace()
         # x = (x - 0.45) / 0.225
         # x=self.normalinput(x)
-        layer_1, layer_2, layer_3, layer_4 = self.Swin( x)
+
+        layer_1, layer_2, layer_3, layer_4 = self.Swin(x)
 
         layer_1_rn = self.scratch.layer1_rn(layer_1)
         layer_2_rn = self.scratch.layer2_rn(layer_2)
@@ -121,7 +179,6 @@ class DPT(BaseModel):
         path_3 = self.scratch.refinenet3(path_4, layer_3_rn)
         
         disp_4 = self.scratch.output_conv4(path_3)
-        
         disp_4=self.attn_depth(disp_4)
         
         path_2 = self.scratch.refinenet2(path_3, layer_2_rn)
@@ -132,13 +189,19 @@ class DPT(BaseModel):
         path_1 = self.scratch.refinenet1(path_2, layer_1_rn)
         
         disp_2 = self.scratch.output_conv2(path_1)
-        
         disp_2=self.attn_depth(disp_2)
         
-        out = self.scratch.output_conv(path_1)
+        #바꾼거 
+        layer_0_rn = self.upsample(layer_1_rn)
+        path_0 = self.scratch.refinenet0(path_1, layer_0_rn)
+        out = self.scratch.output_conv(path_0)
+
+        # out = self.scratch.output_conv(path_1)#기존
+
         out=self.attn_depth(out)
-        
+
         return [out,disp_2,disp_3,disp_4]
+        # return [out]
 
 
 class DPTDepthModel(DPT):
@@ -153,13 +216,18 @@ class DPTDepthModel(DPT):
 
         head = nn.Sequential(
             nn.Conv2d(features, features // 2, kernel_size=3, stride=1, padding=1),
-            Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
             nn.Conv2d(features // 2, 32, kernel_size=3, stride=1, padding=1),
-            # nn.ReLU(True),
-            # nn.Conv2d(32, 1, kernel_size=1, stride=1, padding=0),
-            # nn.ReLU(True) if non_negative else nn.Identity(),
-            # nn.Identity(),
         )
+
+        # head = nn.Sequential(
+        #     nn.Conv2d(features, features // 2, kernel_size=3, stride=1, padding=1),
+        #     Interpolate(scale_factor=2, mode="bilinear", align_corners=True),
+        #     nn.Conv2d(features // 2, 32, kernel_size=3, stride=1, padding=1),
+        #     # nn.ReLU(True),
+        #     # nn.Conv2d(32, 1, kernel_size=1, stride=1, padding=0),
+        #     # nn.Sigmoid() if non_negative else nn.Identity(),
+        #     # nn.Identity(),
+        # )
 
         super().__init__(head, **kwargs)
 
